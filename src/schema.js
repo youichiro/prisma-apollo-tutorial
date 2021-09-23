@@ -1,4 +1,5 @@
 const { gql } = require('apollo-server')
+const { prisma } = require('./db')
 
 const typeDefs = gql`
   type Post {
@@ -19,50 +20,37 @@ const typeDefs = gql`
   }
 `
 
-const posts = [
-  {
-    id: 1,
-    title: 'Post 1',
-    content: 'hoge',
-    published: true,
-  },
-  {
-    id: 2,
-    title: 'Post 2',
-    content: 'hoge',
-    published: true,
-  },
-  {
-    id: 3,
-    title: 'Post 3',
-    content: 'hoge',
-    published: false,
-  },
-]
-
 const resolvers = {
   Query: {
     feed: (parent, args) => {
-      return posts.filter((post) => post.published)
+      return prisma.post.findMany({
+        where: { published: true },
+      })
     },
     post: (parent, args) => {
-      return posts.find((post) => post.id === Number(args.id))
+      return prisma.post.findOne({
+        where: { id: Number(args.id) },
+      })
     },
   },
   Mutation: {
     createDraft: (parent, args) => {
-      posts.push({
-        id: posts.length + 1,
-        title: args.title,
-        content: args.content,
-        published: false,
+      return prisma.post.create({
+        data: {
+          title: args.title,
+          content: args.content,
+        },
       })
-      return posts[posts.length - 1]
     },
     publish: (parent, args) => {
-      const postToPublish = posts.find((post) => post.id === Number(args.id))
-      postToPublish.published = true
-      return postToPublish
+      return prisma.post.update({
+        where: {
+          id: Number(args.id),
+        },
+        data: {
+          published: true,
+        },
+      })
     },
   },
   Post: {
